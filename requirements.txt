@@ -1,0 +1,9 @@
+tensorcircuit-ng
+tensornetwork-ng
+numpy
+scipy
+jax
+jaxlib
+quimb
+optax
+cotengra
