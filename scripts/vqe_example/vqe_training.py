@@ -16,7 +16,6 @@ K = tc.set_backend("jax")
 tc.set_dtype("complex128")
 tc.set_contractor("cotengra")
 
-# --- Parameters ---
 x_dimension = 2  # Number of rows
 y_dimension = 3  # Number of columns
 t = 1.0  # Hopping strength
@@ -96,14 +95,6 @@ for r in range(x_dimension):
     for c in range(y_dimension):
         idx_up = get_spin_orbital_index(r, c, 0)  # Spin up index
         idx_down = get_spin_orbital_index(r, c, 1)  # Spin down index
-
-        # U * a†_{up} a_{up} a†_{down} a_{down}
-        # Note OpenFermion standard ordering (normal ordering often preferred for efficiency,
-        # but this direct translation n_up * n_down is also correct)
-        # n_up * n_down = (a†_up a_up) * (a†_down a_down)
-        # OpenFermion requires descending indices in creation operators first, then annihilation
-        # So we represent it as a†_up a†_down a_down a_up (after normal ordering, check commutation)
-        # Let's use the direct number operator definition:
         term = FermionOperator(
             ((idx_up, 1), (idx_up, 0), (idx_down, 1), (idx_down, 0)), U
         )
@@ -142,10 +133,6 @@ hamiltonian = jax_coo
 def psi(param):
     param = K.real(param)
     c = tc.Circuit(n)
-    # for i in range(0, n, 2):
-    # c.h(i)
-    # c.cx(i, i+1)
-    # c.x(i+1)
 
     for i in range(d):
         for j in range(n):
@@ -174,7 +161,6 @@ def get_h_s(params):
     H = K.zeros([k, k])
     for i in range(k):
         for j in range(i, k):
-            # print((mpss[i].adjoint()@mpss[j]).eval())
             s = K.tensordot(K.conj(states[i]), states[j], axes=1)
             S = S.at[i, j].set(s)
             if i != j:
@@ -223,7 +209,6 @@ if __name__ == "__main__":
 
         solver = optax.lbfgs()
         opt_state = solver.init(params)
-        # vgf = K.jit(K.value_and_grad(loss))
         hist = []
         for i in range(2000):
             params, opt_state, value = step(params, opt_state)
