@@ -1,0 +1,42 @@
+import time
+import tensorcircuit as tc
+import numpy as np
+import optax
+from morse_common import vgf, loss_jit, k, chi, n_digits, title
+
+K = tc.set_backend("jax")
+tc.set_dtype("complex128")
+
+
+if __name__ == "__main__":
+    params = K.convert_to_tensor(np.random.normal(scale=0.02, size=(k, n_digits, chi, chi, 2)))
+    
+    @K.jit
+    def step(params, opt_state):
+        value, grad = vgf(params)
+        updates, opt_state = solver.update(
+            grad,
+            opt_state,
+            params,
+            value=value,
+            grad=grad,
+            value_fn=loss_jit,
+        )
+        params = optax.apply_updates(params, updates)
+        return params, opt_state, value
+
+    # params= params0
+    solver = optax.lbfgs()
+    opt_state = solver.init(params)
+    hist = []
+    for i in range(200000):
+        time0 = time.time()
+        params, opt_state, value = step(params, opt_state)
+        print("Objective function: ", value)
+        time1 = time.time()
+        print("time:", time1 - time0)
+        hist.append(value)
+        if i % 500 == 0:
+            print("writing...")
+            np.save(title + f".npy", params)
+            np.save(title + f"_hist.npy", np.array(hist))
